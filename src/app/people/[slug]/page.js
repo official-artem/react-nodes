@@ -1,26 +1,28 @@
 'use client';
 
+import { getDetails, getPerson } from '@/client/person';
+import { LayoutNode } from '@/components/LayoutNode/LayoutNode';
 import { PersonNode } from '@/components/PersonNode/PersonNode';
-import { Background, Controls, MiniMap, ReactFlow, useEdgesState, useNodesState } from '@xyflow/react';
+import { createGraphData } from '@/helpers/createGraphData';
+import { Background, Controls, ReactFlow, useEdgesState, useNodesState, useUpdateNodeInternals } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { memo, useCallback, useEffect, useState } from 'react';
 
-const initialNodes = [
-  { id: '1', position: { x: 600, y: 250 }, data: { label: '1' } },
-];
-const rfStyle = {
-  backgroundColor: '#23ar32',
-};
-
-const initialEdges = [{ id: 'e1-2', source: '1', target: '2' }];
-const nodeTypes = { customNode: PersonNode };
+const nodeTypes = { default: LayoutNode };
+const initialEdges = [
+  { id: 'e1-2', source: 'hero-1', target: 'movie-1' },
+  { id: 'e2-3', source: 'movie-2', target: 'ship-2' },
+]
 
 export default memo(
   function Home({ params }) {
     const { slug } = params;
-    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+    const [nodes, setNodes, onNodesChange] = useNodesState([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const [person, setPerson] = useState({});
+    const [movies, setMovies] = useState([]);
+    const [starships, setStarships] = useState([]);
+
 
     const onConnect = useCallback(
       (params) => setEdges((eds) => addEdge(params, eds)),
@@ -30,37 +32,27 @@ export default memo(
     useEffect(() => {
       async function getPersonAsync() {
         try {
-          const person = await getPerson(slug);
+          const { heroInfo, movies, starships } = await getDetails(slug);
 
-          setPerson(person);
-
-          const newNode = {
-            id: 2,
-            type: 'custom',
-            data: { name: 'New Node', description: 'This is a new node' },
-            position: { x: 600, y: 300 },
-          };
-          setNodes((els) => [...els, newNode]);
-          setEdges(prevEdges => [...prevEdges, { id: 'e22', source: '1', target: '2' }])
-
-          console.log(nodes)
+          setPerson(heroInfo);
+          setMovies(movies);
+          setStarships(starships);
         } catch (error) {
         }
       }
         getPersonAsync();
-    }, []);
+    }, [slug]);
 
-      setNodes((nds) =>
-        nds.map((node) =>
-          node.id === '3' ? { ...node, data: { ...node.data, name: person.name } } : node
-        )
-      );
+    useEffect(() => {
+      if (!person || !movies || !starships) return;
 
-    // useEffect(() => {
-    //   console.log(nodes)
-    // }, [nodes])
-
-
+      const {
+        nodes: newNodes,
+        edges: newEdges
+      } = createGraphData(person, movies, starships);
+      setEdges(newEdges);
+      setNodes(newNodes);
+    }, [person, movies, starships])
 
     return (
       <div style={{ width: '100vw', height: '100vh' }}>
@@ -71,10 +63,7 @@ export default memo(
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
-          style={rfStyle}
         >
-          <Controls />
-          <MiniMap />
           <Background variant="dots" gap={12} size={1} />
         </ReactFlow>
       </div>

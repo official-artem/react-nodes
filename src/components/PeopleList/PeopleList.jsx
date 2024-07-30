@@ -40,10 +40,10 @@ export function PeopleList() {
 	};
 
 	return (
-		<>
+		<div className='px-[4rem]'>
 			<ul>
 				{people.map(({ id, name }) => (
-					<Person key={id} name={name} index={id} />
+					<Person key={id} name={name} id={id} />
 				))}
 			</ul>
 
@@ -59,6 +59,6 @@ export function PeopleList() {
 					buttonStyles='bg-slate-500 rounded-full px-2 text-white'
 				/>
 			</div>
-		</>
+		</div>
 	);
 }
